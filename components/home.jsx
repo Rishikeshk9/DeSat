@@ -193,7 +193,7 @@ export function Home() {
         <Button href='/launch'>Launch Satellite</Button>
       </div>
 
-      <div className='w-full max-w-md text-center'>
+      <div className='w-full h-screen max-w-md text-center'>
         <div className='relative w-full '>
           <MoonViewer />
           <form className='flex items-center rounded-md bg-[#21262D] px-4 py-2 text-white shadow-lg'>

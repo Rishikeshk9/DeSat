@@ -117,7 +117,7 @@ const MoonViewer = () => {
     };
   }, []);
 
-  return <div ref={mountRef} className='w-full h-full' />;
+  return <div ref={mountRef} className='w-full h-96' />;
 };
 
 export default MoonViewer;
