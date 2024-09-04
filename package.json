@@ -14,6 +14,7 @@
     "@types/three": "^0.168.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "gsap": "^3.12.5",
     "lucide-react": "^0.438.0",
     "next": "14.2.7",
     "papaparse": "^5.4.1",

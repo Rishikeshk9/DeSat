@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { gsap } from 'gsap';
 
 const MoonViewer = () => {
   const mountRef = useRef(null);
@@ -22,31 +23,32 @@ const MoonViewer = () => {
 
     mountRef.current.appendChild(renderer.domElement);
 
-    // Moon
-    const moonGeometry = new THREE.SphereGeometry(0.75, 128, 128); // Increased segments for smoother sphere
+    // Earth
+    const earthGeometry = new THREE.SphereGeometry(0.75, 128, 128); // Increased segments for smoother sphere
     const textureLoader = new THREE.TextureLoader();
-    const moonTexture = textureLoader.load('/earth.jpg');
-    moonTexture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Improve texture sharpness
-    const moonMaterial = new THREE.MeshPhongMaterial({
-      map: moonTexture,
+    const earthTexture = textureLoader.load('/earth.jpg');
+    earthTexture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Improve texture sharpness
+    const earthMaterial = new THREE.MeshPhongMaterial({
+      map: earthTexture,
       shininess: 5,
     });
-    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-    moon.scale.setScalar(1.5); // Increase the size of the moon
-    moon.position.set(0, -1.35, 0); // Move the moon down
-    scene.add(moon);
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    earth.scale.setScalar(1.5); // Increase the size of the earth
+    earth.position.set(0, -2.5, 0); // Start position below the view
+    scene.add(earth);
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Soft ambient light
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(15, 10, 0); // Position light to the right of the moon
+    directionalLight.position.set(15, 10, 0); // Position light to the right of the earth
     scene.add(directionalLight);
 
     const directionalLightLeft = new THREE.DirectionalLight(0xffffff, 0.05);
-    directionalLightLeft.position.set(-5, 5, 5); // Position light to the right of the moon
+    directionalLightLeft.position.set(-5, 5, 5); // Position light to the left of the earth
     scene.add(directionalLightLeft);
+
     // Camera position
     camera.position.z = 2.5;
 
@@ -58,14 +60,22 @@ const MoonViewer = () => {
     controls.enablePan = false;
     controls.enableRotate = false;
 
+    // Ease-in animation with 2-second delay
+    setTimeout(() => {
+      gsap.to(earth.position, {
+        y: -1.35,
+        duration: 2,
+        ease: 'power2.out',
+      });
+    }, 2000);
+
     // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
 
-      // Rotate the moon
-      moon.rotation.y += 0.0007; // Adjust this value to change rotation speed
-      //moon.rotation.x -= 0.0002; // Adjust this value to change rotation speed
+      // Rotate the earth
+      earth.rotation.y += 0.0007; // Adjust this value to change rotation speed
 
       renderer.render(scene, camera);
     };

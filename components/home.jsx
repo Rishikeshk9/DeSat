@@ -8,6 +8,7 @@ import MoonViewer from './MoonViewer';
 import Link from 'next/link';
 import { Particles } from './Particles';
 import InfoModal from './InfoModal';
+import Button from './Button';
 
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -189,12 +190,7 @@ export function Home() {
       <Particles />
       {/* Launch Satellite button in the top right corner */}
       <div className='absolute z-10 top-4 right-4'>
-        <Link
-          href='/launch'
-          className='inline-block px-4 py-1 text-white transition-colors border rounded-md border-white/50 hover:bg-white/50 active:bg-white active:text-black hover:text-black'
-        >
-          Launch Satellite
-        </Link>
+        <Button href='/launch'>Launch Satellite</Button>
       </div>
 
       <div className='w-full max-w-md text-center'>
@@ -268,19 +264,14 @@ export function Home() {
                 <h2 className='mr-4 text-xl font-bold text-white'>
                   {selectedSatellite.info.satname}
                 </h2>
-                <button
-                  className='px-2 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600'
+                <Button
                   onClick={handleRefresh}
+                  className='text-sm bg-blue-500 hover:bg-blue-600'
                 >
                   Refresh
-                </button>
+                </Button>
               </div>
-              <button
-                className='text-white'
-                onClick={() => setShowModal(false)}
-              >
-                Close
-              </button>
+              <Button onClick={() => setShowModal(false)}>Close</Button>
             </div>
             <div className='relative flex flex-grow'>
               <div className='w-full h-full '>

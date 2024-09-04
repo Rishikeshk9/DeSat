@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Button from './Button';
 
 export function Launch() {
   const [formData, setFormData] = useState({
@@ -83,12 +84,9 @@ export function Launch() {
           className='w-full px-4 py-2 bg-[#21262D] rounded-md'
           required
         />
-        <button
-          type='submit'
-          className='w-full px-6 py-3 transition-colors bg-blue-600 rounded-md hover:bg-blue-700'
-        >
+        <Button type='submit' className='w-full bg-blue-600 hover:bg-blue-700'>
           Start Countdown
-        </button>
+        </Button>
       </form>
     </div>
   );
