@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Papa from 'papaparse';
 import { calculateSatellitePosition } from '@/app/utils/satellite';
 import GLTFModelViewer from './GLTFModelViewer';
@@ -9,6 +9,10 @@ import Link from 'next/link';
 import { Particles } from './Particles';
 import InfoModal from './InfoModal';
 import Button from './Button';
+import { gsap } from 'gsap';
+import { useWeb3Auth } from './Web3AuthProvider';
+import XMTPConversationModal from './XMTPConversationModal';
+import MySatellites from './MySatellites';
 
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +24,12 @@ export function Home() {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isEarthCentered, setIsEarthCentered] = useState(false);
+  const searchContainerRef = useRef(null);
+  const earthContainerRef = useRef(null);
+  const [showXMTPModal, setShowXMTPModal] = useState(false);
+
+  const { user, isLoading, login, logout } = useWeb3Auth();
 
   useEffect(() => {
     // Load and parse the CSV file
@@ -33,12 +43,17 @@ export function Home() {
   }, []);
 
   useEffect(() => {
-    if (selectedSatellite) {
+    if (selectedSatellite && selectedSatellite.tle) {
       const data = calculateSatellitePosition(
         selectedSatellite.tle[0],
         selectedSatellite.tle[1]
       );
-      setSatelliteData(data);
+      if (data) {
+        console.log('Setting satellite data:', data);
+        setSatelliteData(data);
+      } else {
+        console.error('Failed to calculate satellite position');
+      }
     }
   }, [selectedSatellite]);
 
@@ -73,24 +88,29 @@ export function Home() {
             tle: tle,
             lastRefresh: Date.now(),
           };
-          console.log(satelliteData);
+          console.log('Setting selected satellite:', satelliteData);
           setSelectedSatellite(satelliteData);
 
           try {
-            // Calculate position only if TLE data is available
-            const position = calculateSatellitePosition(tle[1], tle[2]);
-            setSatelliteData(position);
+            const position = calculateSatellitePosition(tle[0], tle[1]);
+            if (position) {
+              console.log('Setting initial satellite data:', position);
+              setSatelliteData(position);
+            } else {
+              console.error('Failed to calculate initial satellite position');
+            }
           } catch (error) {
             console.error('Error calculating satellite position:', error);
             setSelectedSatellite({ ...satelliteData, noTleData: true });
             setSatelliteData(null);
           }
         } else {
+          console.error('Invalid TLE data');
           setSelectedSatellite({ ...data, noTleData: true });
           setSatelliteData(null);
         }
       } else {
-        // Set selected satellite with no TLE data
+        console.error('No TLE data available');
         setSelectedSatellite({ ...data, noTleData: true });
         setSatelliteData(null);
       }
@@ -98,6 +118,11 @@ export function Home() {
       console.error('Error fetching satellite details:', error);
       setSelectedSatellite({ noTleData: true, error: true });
       setSatelliteData(null);
+    }
+
+    // After setting the satellite data, animate the earth to the center
+    if (!isEarthCentered) {
+      animateEarthToCenter();
     }
   };
 
@@ -151,52 +176,70 @@ export function Home() {
     };
   }, [showModal, selectedSatellite, handleRefresh]);
 
+  const animateEarthToCenter = () => {
+    gsap.to(searchContainerRef.current, {
+      bottom: '10%',
+      duration: 1,
+      ease: 'power2.inOut',
+    });
+    gsap.to(earthContainerRef.current, {
+      top: '50%',
+      left: '50%',
+      xPercent: -50,
+      yPercent: -50,
+      scale: 1,
+      duration: 1,
+      ease: 'power2.inOut',
+      onComplete: () => setIsEarthCentered(true),
+    });
+  };
+
+  const handleLaunchSatellite = () => {
+    if (!user) {
+      login();
+    } else {
+      setShowXMTPModal(true);
+    }
+  };
+
   return (
     <div className='flex min-h-screen w-full flex-col items-center justify-center bg-[#0D1117] px-4 md:px-6 relative'>
-      {selectedSatellite && (
-        <div className='flex flex-col mx-2 max-w-md gap-2 text-left bg-black text-white z-[999] absolute top-16 p-4 border border-white/50 rounded-md w-full'>
-          <h1 className='text-white'>
-            {selectedSatellite.info?.satname || 'Unknown Satellite'}
-          </h1>
-          {selectedSatellite.noTleData ? (
-            <p>Information not available. Will be updated soon!</p>
-          ) : satelliteData ? (
-            <>
-              <p>Longitude: {satelliteData.longitude}</p>
-              <p>Latitude: {satelliteData.latitude}</p>
-              <p>Altitude (km): {satelliteData.altitude}</p>
-              <p>Velocity (km/s): {satelliteData.velocityKmS}</p>
-              <button
-                className='px-2 py-1 text-black rounded bg-white/50 hover:bg-white/60'
-                onClick={() => setShowModal(true)}
-              >
-                View in 3D
-              </button>
-            </>
-          ) : (
-            <p>Loading satellite data...</p>
-          )}
-          <p
-            className='w-full text-center cursor-pointer hover:text-white/60 active:text-white text-white/50'
-            onClick={() => {
-              setSelectedSatellite(null);
-              setSatelliteData(null);
-            }}
-          >
-            close
-          </p>
-        </div>
-      )}
-      <Particles />
-      {/* Launch Satellite button in the top right corner */}
-      <div className='absolute z-10 top-4 right-4'>
-        <Button href='/launch'>Launch Satellite</Button>
+      <div
+        ref={earthContainerRef}
+        className='absolute w-full h-full'
+        style={{
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        <MoonViewer
+          satelliteData={satelliteData}
+          isEarthCentered={isEarthCentered}
+        />
       </div>
 
-      <div className='w-full h-screen max-w-md text-center'>
-        <div className='relative w-full '>
-          <MoonViewer />
-          <form className='flex items-center rounded-md bg-[#21262D] px-4 py-2 text-white shadow-lg'>
+      {/* Launch Satellite, Mission Control, and Login buttons in the top right corner */}
+      <div className='absolute z-10 flex space-x-2 top-4 right-4'>
+        <Button onClick={handleLaunchSatellite}>Launch Satellite</Button>
+        <Link href='/mission-control'>
+          <Button>Mission Control</Button>
+        </Link>
+        {isLoading ? (
+          <Button disabled>Loading...</Button>
+        ) : user ? (
+          <Button onClick={logout}>Logout</Button>
+        ) : (
+          <Button onClick={login}>Login</Button>
+        )}
+      </div>
+
+      <div
+        ref={searchContainerRef}
+        className='absolute left-0 w-full px-4 bottom-4'
+      >
+        <div className='w-full max-w-md mx-auto'>
+          <form className='flex items-center rounded-md bg-[#21262D] px-4 py-2 text-white shadow-lg '>
             <SearchIcon className='w-5 h-5 text-white' />
             <input
               type='search'
@@ -207,7 +250,7 @@ export function Home() {
             />
           </form>
           {searchResults.length > 0 && (
-            <div className='absolute z-10 w-full mt-1 bg-[#21262D] rounded-md shadow-lg text-white'>
+            <div className='absolute z-10 w-full mt-1 bg-[#21262D] rounded-md shadow-lg text-white -top-40 max-w-96'>
               <table className='w-full text-left'>
                 <thead className='text-xs text-white'>
                   <tr>
@@ -218,7 +261,7 @@ export function Home() {
                   </tr>
                 </thead>
               </table>
-              <ul className='overflow-y-auto text-white/30 max-h-52'>
+              <ul className='overflow-y-auto text-white/30 max-h-28 '>
                 {searchResults.map((result, index) => (
                   <li
                     key={index}
@@ -242,7 +285,8 @@ export function Home() {
           )}
         </div>
       </div>
-      <div className='absolute flex flex-col items-center justify-center w-full text-center bottom-12'>
+
+      <div className='flex flex-col items-center justify-center w-full text-center '>
         <h1 className='flex text-3xl font-bold tracking-tighter text-center text-white sm:text-4xl md:text-5xl lg:text-6xl '>
           DeSat
         </h1>
@@ -326,6 +370,9 @@ export function Home() {
         </div>
       )}
       {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
+      {showXMTPModal && (
+        <XMTPConversationModal onClose={() => setShowXMTPModal(false)} />
+      )}
     </div>
   );
 }
