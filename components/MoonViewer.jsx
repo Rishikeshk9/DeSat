@@ -13,14 +13,20 @@ const MoonViewer = () => {
     // Scene setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance',
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
 
     mountRef.current.appendChild(renderer.domElement);
 
     // Moon
-    const moonGeometry = new THREE.SphereGeometry(1, 64, 64);
+    const moonGeometry = new THREE.SphereGeometry(0.75, 128, 128); // Increased segments for smoother sphere
     const textureLoader = new THREE.TextureLoader();
-    const moonTexture = textureLoader.load('/moon.jpg');
+    const moonTexture = textureLoader.load('/earth.jpg');
+    moonTexture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Improve texture sharpness
     const moonMaterial = new THREE.MeshPhongMaterial({
       map: moonTexture,
       shininess: 5,
@@ -34,7 +40,7 @@ const MoonViewer = () => {
     const ambientLight = new THREE.AmbientLight(0x404040, 0.2); // Soft ambient light
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(15, 10, 0); // Position light to the right of the moon
     scene.add(directionalLight);
 
@@ -59,7 +65,7 @@ const MoonViewer = () => {
 
       // Rotate the moon
       moon.rotation.y += 0.0007; // Adjust this value to change rotation speed
-      moon.rotation.x -= 0.0002; // Adjust this value to change rotation speed
+      //moon.rotation.x -= 0.0002; // Adjust this value to change rotation speed
 
       renderer.render(scene, camera);
     };
@@ -74,6 +80,7 @@ const MoonViewer = () => {
       camera.updateProjectionMatrix();
 
       renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio); // Ensure proper pixel ratio on resize
     };
 
     // Initial resize

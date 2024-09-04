@@ -5,6 +5,8 @@ import Papa from 'papaparse';
 import { calculateSatellitePosition } from '@/app/utils/satellite';
 import GLTFModelViewer from './GLTFModelViewer';
 import MoonViewer from './MoonViewer';
+import Link from 'next/link';
+import { Particles } from './Particles';
 
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,7 +124,7 @@ export function Home() {
   }, [showModal, selectedSatellite, handleRefresh]);
 
   return (
-    <div className='flex min-h-screen w-full flex-col items-center justify-center bg-[#0D1117] px-4 md:px-6 '>
+    <div className='flex min-h-screen w-full flex-col items-center justify-center bg-[#0D1117] px-4 md:px-6 relative'>
       {satelliteData && (
         <div className='flex flex-col w-full max-w-md gap-2 text-left text-white'>
           <h1 className='text-white'>{selectedSatellite.info.satname}</h1>
@@ -138,15 +140,18 @@ export function Home() {
           </button>
         </div>
       )}
-      <div className='w-full max-w-md space-y-6 text-center'>
-        <div className='absolute flex flex-col items-center justify-center text-center bottom-12'>
-          <h1 className='flex text-3xl font-bold tracking-tighter text-center text-white sm:text-4xl md:text-5xl lg:text-6xl'>
-            DeSat
-          </h1>
-          <p className='flex text-center text-white'>
-            Own & Control the Future of Space Exploration
-          </p>
-        </div>
+      <Particles />
+      {/* Launch Satellite button in the top right corner */}
+      <div className='absolute z-10 top-4 right-4'>
+        <Link
+          href='/launch'
+          className='inline-block px-4 py-1 text-white transition-colors border rounded-md border-white/50 hover:bg-white/50 active:bg-white active:text-black hover:text-black'
+        >
+          Launch Satellite
+        </Link>
+      </div>
+
+      <div className='w-full max-w-md text-center'>
         <div className='relative w-full '>
           <MoonViewer />
           <form className='flex items-center rounded-md bg-[#21262D] px-4 py-2 text-white shadow-lg'>
@@ -195,9 +200,16 @@ export function Home() {
           )}
         </div>
       </div>
-
+      <div className='absolute flex flex-col items-center justify-center w-full text-center bottom-12'>
+        <h1 className='flex text-3xl font-bold tracking-tighter text-center text-white sm:text-4xl md:text-5xl lg:text-6xl '>
+          DeSat
+        </h1>
+        <p className='flex text-xs text-center text-white/50'>
+          Own & Control the Future of Space Exploration
+        </p>
+      </div>
       {showModal && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
+        <div className='fixed   z-[999] flex items-center justify-center bg-black bg-opacity-50'>
           <div className='bg-[#21262D] p-4 rounded-md w-5/6 h-5/6 flex flex-col'>
             <div className='flex items-center justify-between mb-4'>
               <div className='flex items-center'>
@@ -270,6 +282,7 @@ export function Home() {
           </div>
         </div>
       )}
+      {/* Remove the previous Launch Satellite button from here */}
     </div>
   );
 }
