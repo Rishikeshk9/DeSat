@@ -7,6 +7,7 @@ import GLTFModelViewer from './GLTFModelViewer';
 import MoonViewer from './MoonViewer';
 import Link from 'next/link';
 import { Particles } from './Particles';
+import InfoModal from './InfoModal';
 
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +17,8 @@ export function Home() {
   const [satelliteData, setSatelliteData] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   useEffect(() => {
     // Load and parse the CSV file
@@ -60,16 +63,40 @@ export function Home() {
       );
       const data = await response.json();
       console.log(data);
-      const tle = data.tle.split('\r\n');
-      const satelliteData = {
-        ...data,
-        tle: tle,
-        lastRefresh: Date.now(), // Add this line
-      };
-      console.log(satelliteData);
-      setSelectedSatellite(satelliteData);
+
+      if (data.tle) {
+        const tle = data.tle.split('\r\n');
+        if (tle.length >= 2) {
+          const satelliteData = {
+            ...data,
+            tle: tle,
+            lastRefresh: Date.now(),
+          };
+          console.log(satelliteData);
+          setSelectedSatellite(satelliteData);
+
+          try {
+            // Calculate position only if TLE data is available
+            const position = calculateSatellitePosition(tle[1], tle[2]);
+            setSatelliteData(position);
+          } catch (error) {
+            console.error('Error calculating satellite position:', error);
+            setSelectedSatellite({ ...satelliteData, noTleData: true });
+            setSatelliteData(null);
+          }
+        } else {
+          setSelectedSatellite({ ...data, noTleData: true });
+          setSatelliteData(null);
+        }
+      } else {
+        // Set selected satellite with no TLE data
+        setSelectedSatellite({ ...data, noTleData: true });
+        setSatelliteData(null);
+      }
     } catch (error) {
       console.error('Error fetching satellite details:', error);
+      setSelectedSatellite({ noTleData: true, error: true });
+      setSatelliteData(null);
     }
   };
 
@@ -125,19 +152,38 @@ export function Home() {
 
   return (
     <div className='flex min-h-screen w-full flex-col items-center justify-center bg-[#0D1117] px-4 md:px-6 relative'>
-      {satelliteData && (
-        <div className='flex flex-col w-full max-w-md gap-2 text-left text-white'>
-          <h1 className='text-white'>{selectedSatellite.info.satname}</h1>
-          <p>Longitude: {satelliteData.longitude}</p>
-          <p>Latitude: {satelliteData.latitude}</p>
-          <p>Altitude (km): {satelliteData.altitude}</p>
-          <p>Velocity (km/s): {satelliteData.velocityKmS}</p>
-          <button
-            className='px-2 py-1 text-black rounded bg-white/50 hover:bg-white/60'
-            onClick={() => setShowModal(true)}
+      {selectedSatellite && (
+        <div className='flex flex-col mx-2 max-w-md gap-2 text-left bg-black text-white z-[999] absolute top-16 p-4 border border-white/50 rounded-md w-full'>
+          <h1 className='text-white'>
+            {selectedSatellite.info?.satname || 'Unknown Satellite'}
+          </h1>
+          {selectedSatellite.noTleData ? (
+            <p>Information not available. Will be updated soon!</p>
+          ) : satelliteData ? (
+            <>
+              <p>Longitude: {satelliteData.longitude}</p>
+              <p>Latitude: {satelliteData.latitude}</p>
+              <p>Altitude (km): {satelliteData.altitude}</p>
+              <p>Velocity (km/s): {satelliteData.velocityKmS}</p>
+              <button
+                className='px-2 py-1 text-black rounded bg-white/50 hover:bg-white/60'
+                onClick={() => setShowModal(true)}
+              >
+                View in 3D
+              </button>
+            </>
+          ) : (
+            <p>Loading satellite data...</p>
+          )}
+          <p
+            className='w-full text-center cursor-pointer hover:text-white/60 active:text-white text-white/50'
+            onClick={() => {
+              setSelectedSatellite(null);
+              setSatelliteData(null);
+            }}
           >
-            View in 3D
-          </button>
+            close
+          </p>
         </div>
       )}
       <Particles />
@@ -207,9 +253,15 @@ export function Home() {
         <p className='flex text-xs text-center text-white/50'>
           Own & Control the Future of Space Exploration
         </p>
+        <p
+          onClick={() => setShowInfoModal(true)}
+          className='text-xs underline text-white/50 cursor-help'
+        >
+          know more
+        </p>
       </div>
-      {showModal && (
-        <div className='fixed   z-[999] flex items-center justify-center bg-black bg-opacity-50'>
+      {showModal && selectedSatellite && !selectedSatellite.noTleData && (
+        <div className='fixed z-[999] flex items-center justify-center bg-black bg-opacity-50 w-full h-full'>
           <div className='bg-[#21262D] p-4 rounded-md w-5/6 h-5/6 flex flex-col'>
             <div className='flex items-center justify-between mb-4'>
               <div className='flex items-center'>
@@ -282,7 +334,7 @@ export function Home() {
           </div>
         </div>
       )}
-      {/* Remove the previous Launch Satellite button from here */}
+      {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
     </div>
   );
 }

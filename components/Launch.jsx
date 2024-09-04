@@ -29,7 +29,7 @@ export function Launch() {
 
   return (
     <div className='min-h-screen bg-[#0D1117] text-white flex flex-col items-center justify-center px-4 py-8'>
-      <h1 className='text-3xl font-bold mb-8'>Launch Your Satellite</h1>
+      <h1 className='mb-8 text-3xl font-bold'>Launch Your Satellite</h1>
       <form onSubmit={handleSubmit} className='w-full max-w-md space-y-4'>
         <input
           type='text'
@@ -85,7 +85,7 @@ export function Launch() {
         />
         <button
           type='submit'
-          className='w-full px-6 py-3 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors'
+          className='w-full px-6 py-3 transition-colors bg-blue-600 rounded-md hover:bg-blue-700'
         >
           Start Countdown
         </button>
