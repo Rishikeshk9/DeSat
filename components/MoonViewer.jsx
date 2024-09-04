@@ -91,6 +91,17 @@ const MoonViewer = () => {
 
       renderer.setSize(width, height);
       renderer.setPixelRatio(window.devicePixelRatio); // Ensure proper pixel ratio on resize
+
+      // Adjust camera and earth position for mobile devices
+      if (width < height) {
+        camera.position.z = 3.5; // Move camera further back on mobile
+        earth.position.y = -1.6; // Lower the earth's position slightly
+        earth.scale.setScalar(1.3); // Slightly reduce earth's size on mobile
+      } else {
+        camera.position.z = 2.5; // Original camera position for desktop
+        earth.position.y = -1.35; // Original earth position for desktop
+        earth.scale.setScalar(1.5); // Original earth size for desktop
+      }
     };
 
     // Initial resize
