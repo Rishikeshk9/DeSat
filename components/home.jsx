@@ -222,9 +222,11 @@ export function Home() {
       {/* Launch Satellite, Mission Control, and Login buttons in the top right corner */}
       <div className='absolute z-10 flex space-x-2 top-4 right-4'>
         <Button onClick={handleLaunchSatellite}>Launch Satellite</Button>
-        <Link href='/mission-control'>
-          <Button>Mission Control</Button>
-        </Link>
+        {user && (
+          <Link href='/mission-control'>
+            <Button>Mission Control</Button>
+          </Link>
+        )}
         {isLoading ? (
           <Button disabled>Loading...</Button>
         ) : user ? (
