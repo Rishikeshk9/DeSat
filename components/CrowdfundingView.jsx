@@ -8,7 +8,8 @@ import CrowdfundingSatelliteABI from '../lib/abis/CrowdfundingSatellite.json';
 import SATFANABI from '../lib/abis/SATFAN.json';
 
 const CrowdfundingView = ({ tokenId }) => {
-  const { provider, user } = useWeb3Auth();
+  const { provider, user, ethersProvider, signer, getChainId, switchChain } =
+    useWeb3Auth();
   const [campaignDetails, setCampaignDetails] = useState(null);
   const [contribution, setContribution] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +22,8 @@ const CrowdfundingView = ({ tokenId }) => {
 
   const fetchCampaignDetails = async () => {
     try {
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
+      const _ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await _ethersProvider.getSigner();
       const crowdfundingContract = new ethers.Contract(
         process.env.NEXT_PUBLIC_CROWDFUNDING_CONTRACT_ADDRESS,
         CrowdfundingSatelliteABI,
@@ -30,6 +31,7 @@ const CrowdfundingView = ({ tokenId }) => {
       );
 
       const details = await crowdfundingContract.getCampaignDetails(tokenId);
+      console.log(details);
       setCampaignDetails({
         creator: details[0],
         goal: ethers.formatEther(details[1]),
@@ -45,11 +47,14 @@ const CrowdfundingView = ({ tokenId }) => {
 
   const handleContribute = async () => {
     if (!provider || !campaignDetails) return;
-
+    await switchChain();
+    console.log(provider);
     setLoading(true);
     try {
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
+      const _ethersProvider = new ethers.BrowserProvider(provider);
+      console.log(_ethersProvider);
+      const signer = await _ethersProvider.getSigner();
+      console.log(signer);
       const crowdfundingContract = new ethers.Contract(
         process.env.NEXT_PUBLIC_CROWDFUNDING_CONTRACT_ADDRESS,
         CrowdfundingSatelliteABI,
@@ -61,15 +66,21 @@ const CrowdfundingView = ({ tokenId }) => {
         SATFANABI,
         signer
       );
-
+      console.log(tokenContract);
       const amount = ethers.parseEther(contribution);
 
+      console.log(amount);
       // Approve the crowdfunding contract to spend tokens
-      const approveTx = await tokenContract.approve(process.env.NEXT_PUBLIC_CROWDFUNDING_CONTRACT_ADDRESS, amount);
+      const approveTx = await tokenContract.approve(
+        process.env.NEXT_PUBLIC_CROWDFUNDING_CONTRACT_ADDRESS,
+        amount
+      );
+      console.log(approveTx);
       await approveTx.wait();
 
       // Contribute to the campaign
       const tx = await crowdfundingContract.contribute(tokenId, amount);
+      console.log(tx);
       await tx.wait();
 
       alert('Contribution successful!');
@@ -87,21 +98,21 @@ const CrowdfundingView = ({ tokenId }) => {
   }
 
   return (
-    <div className="p-4 bg-gray-800 rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">Crowdfunding Campaign</h2>
+    <div className='p-4 bg-gray-800 rounded-lg'>
+      <h2 className='mb-4 text-2xl font-bold'>Crowdfunding Campaign</h2>
       <p>Creator: {campaignDetails.creator}</p>
       <p>Goal: {campaignDetails.goal} SATFAN</p>
       <p>Total Funded: {campaignDetails.totalFunded} SATFAN</p>
       <p>End Time: {campaignDetails.endTime.toLocaleString()}</p>
       <p>Status: {campaignDetails.isActive ? 'Active' : 'Ended'}</p>
       {campaignDetails.isActive && (
-        <div className="mt-4">
+        <div className='mt-4'>
           <input
-            type="number"
+            type='number'
             value={contribution}
             onChange={(e) => setContribution(e.target.value)}
-            placeholder="Amount to contribute"
-            className="w-full p-2 mb-2 bg-gray-700 rounded"
+            placeholder='Amount to contribute'
+            className='w-full p-2 mb-2 bg-gray-700 rounded'
           />
           <Button onClick={handleContribute} disabled={loading}>
             {loading ? 'Contributing...' : 'Contribute'}

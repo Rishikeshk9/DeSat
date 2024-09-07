@@ -1,12 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, createContext, useContext, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  createContext,
+  useContext,
+  useCallback,
+} from 'react';
 import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { Web3Auth } from '@web3auth/modal';
 import { ethers } from 'ethers';
 
-const clientId = 'BFlOmzaEDc3C8f9t48td3KPKAhKNo-5tdcA0FOgvSUcy19hJgvHlrzNzkiGrL4lQn67DAR0TysC3cXz2vLyr_zU';
+const clientId =
+  'BFlOmzaEDc3C8f9t48td3KPKAhKNo-5tdcA0FOgvSUcy19hJgvHlrzNzkiGrL4lQn67DAR0TysC3cXz2vLyr_zU';
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
@@ -21,24 +28,25 @@ const chainConfig = {
 
 const ChillizConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: "0x15b38", // Chilliz testnet chain ID in hex
-  rpcTarget: "https://spicy-rpc.chiliz.com",
-  displayName: "Chilliz Testnet",
-  blockExplorerUrl: "https://testnet.chiliscan.com",
-  ticker: "CHZ",
-  tickerName: "Chilliz",
+  chainId: '0x15b32', // Chilliz testnet chain ID in hex
+  rpcTarget: 'https://spicy-rpc.chiliz.com',
+  displayName: 'Chilliz Testnet',
+  blockExplorerUrl: 'https://testnet.chiliscan.com',
+  ticker: 'CHZ',
+  tickerName: 'Chilliz',
   decimals: 18,
   isTestnet: true,
 };
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig },
+  config: { chainConfig, ChillizConfig },
 });
 
 const web3auth = new Web3Auth({
   clientId,
   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
   privateKeyProvider,
+  chainConfig: chainConfig,
 });
 
 const Web3AuthContext = createContext(null);
@@ -58,9 +66,8 @@ export const Web3AuthProvider = ({ children }) => {
       await web3auth.initModal();
       setIsInitialized(true);
       await web3auth.addChain(ChillizConfig);
-
       if (web3auth.connected) {
-        await web3auth.switchChain({ chainId: "0x15b38" });
+        console.log('Connected to Web3Auth');
 
         const web3authProvider = web3auth.provider;
         setProvider(web3authProvider);
@@ -80,6 +87,10 @@ export const Web3AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    console.log(web3auth);
+  }, [web3auth.status]);
+
+  useEffect(() => {
     initializeWeb3Auth();
   }, [initializeWeb3Auth]);
 
@@ -91,6 +102,7 @@ export const Web3AuthProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const web3authProvider = await web3auth.connect();
+
       setProvider(web3authProvider);
       if (web3auth.connected) {
         const userInfo = await web3auth.getUserInfo();
@@ -161,6 +173,17 @@ export const Web3AuthProvider = ({ children }) => {
     }
   };
 
+  const switchChain = async () => {
+    if (!ethersProvider || !signer) return null;
+    try {
+      await web3auth.addChain(ChillizConfig);
+      await web3auth.switchChain({ chainId: '0x15b32' });
+    } catch (error) {
+      console.error('Error Switching Chain:', error);
+      return null;
+    }
+  };
+
   const value = {
     provider,
     user,
@@ -173,6 +196,7 @@ export const Web3AuthProvider = ({ children }) => {
     getChainId,
     getAccounts,
     getBalance,
+    switchChain,
   };
 
   return (
