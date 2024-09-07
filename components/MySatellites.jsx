@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useWeb3Auth } from './Web3AuthProvider';
 import Button from './Button';
 import { ethers } from 'ethers';
+import CrowdfundingView from './CrowdfundingView';
 
 const getAccounts = async (provider) => {
   try {
@@ -40,7 +41,12 @@ const MySatellites = () => {
         }
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/satellite?address=${userAddress}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/satellite?address=${userAddress}`,
+          {
+            headers: {
+              'ngrok-skip-browser-warning': '69420',
+            },
+          }
         );
         if (!response.ok) {
           throw new Error('Failed to fetch satellites');
@@ -89,6 +95,8 @@ const MySatellites = () => {
               <p>
                 <strong>Token ID:</strong> {satellite.tokenId}
               </p>
+
+              <CrowdfundingView tokenId={satellite.tokenId} />
               <p>
                 <strong>Organization:</strong> {satellite.organizationName}
               </p>

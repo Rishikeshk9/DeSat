@@ -15,7 +15,6 @@ import XMTPConversationModal from './XMTPConversationModal';
 import MySatellites from './MySatellites';
 import CrowdfundingView from './CrowdfundingView.jsx';
 
-
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -32,7 +31,8 @@ export function Home() {
   const [showXMTPModal, setShowXMTPModal] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState(null);
 
-  const { user, isLoading, isInitialized, login, logout } = useWeb3Auth();
+  const { user, isLoading, isInitialized, login, logout, switchChain } =
+    useWeb3Auth();
 
   useEffect(() => {
     // Load and parse the CSV file
@@ -78,7 +78,12 @@ export function Home() {
   const handleSatelliteClick = async (noradId) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${noradId}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${noradId}`,
+        {
+          headers: {
+            'ngrok-skip-browser-warning': '69420',
+          },
+        }
       );
       const data = await response.json();
       console.log(data);
@@ -138,7 +143,12 @@ export function Home() {
       ) {
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${selectedSatellite.info.satid}`
+            `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${selectedSatellite.info.satid}`,
+            {
+              headers: {
+                'ngrok-skip-browser-warning': '69420',
+              },
+            }
           );
           const data = await response.json();
           const tle = data.tle.split('\r\n');
@@ -230,9 +240,14 @@ export function Home() {
       <div className='absolute z-10 flex space-x-2 top-4 right-4'>
         <Button onClick={handleLaunchSatellite}>Launch Satellite</Button>
         {user && (
-          <Link href='/mission-control'>
-            <Button>Mission Control</Button>
-          </Link>
+          <>
+            <div onClick={switchChain}>
+              <Button>Switch Chain</Button>
+            </div>
+            <Link href='/mission-control'>
+              <Button>Mission Control</Button>
+            </Link>
+          </>
         )}
         {user ? (
           <Button onClick={logout}>Logout</Button>
@@ -380,9 +395,7 @@ export function Home() {
       {showXMTPModal && (
         <XMTPConversationModal onClose={() => setShowXMTPModal(false)} />
       )}
-      {selectedTokenId && (
-        <CrowdfundingView tokenId={selectedTokenId} />
-      )}
+      {selectedTokenId && <CrowdfundingView tokenId={selectedTokenId} />}
     </div>
   );
 }
