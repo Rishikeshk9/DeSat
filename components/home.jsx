@@ -13,6 +13,8 @@ import { gsap } from 'gsap';
 import { useWeb3Auth } from './Web3AuthProvider';
 import XMTPConversationModal from './XMTPConversationModal';
 import MySatellites from './MySatellites';
+import CrowdfundingView from './CrowdfundingView.jsx';
+
 
 export function Home() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,8 +30,9 @@ export function Home() {
   const searchContainerRef = useRef(null);
   const earthContainerRef = useRef(null);
   const [showXMTPModal, setShowXMTPModal] = useState(false);
+  const [selectedTokenId, setSelectedTokenId] = useState(null);
 
-  const { user, isLoading, login, logout } = useWeb3Auth();
+  const { user, isLoading, isInitialized, login, logout } = useWeb3Auth();
 
   useEffect(() => {
     // Load and parse the CSV file
@@ -75,7 +78,7 @@ export function Home() {
   const handleSatelliteClick = async (noradId) => {
     try {
       const response = await fetch(
-        `https://api.n2yo.com/rest/v1/satellite/tle/${noradId}&apiKey=A5EXJY-NPGGRP-MLW28F-5BVR`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${noradId}`
       );
       const data = await response.json();
       console.log(data);
@@ -135,7 +138,7 @@ export function Home() {
       ) {
         try {
           const response = await fetch(
-            `https://api.n2yo.com/rest/v1/satellite/tle/${selectedSatellite.info.satid}&apiKey=A5EXJY-NPGGRP-MLW28F-5BVR`
+            `${process.env.NEXT_PUBLIC_API_URL}/api/satellite/tle/${selectedSatellite.info.satid}`
           );
           const data = await response.json();
           const tle = data.tle.split('\r\n');
@@ -202,6 +205,10 @@ export function Home() {
     }
   };
 
+  if (!isInitialized || isLoading) {
+    return <div>Initializing Web3Auth...</div>;
+  }
+
   return (
     <div className='flex min-h-screen w-full flex-col items-center justify-center bg-[#0D1117] px-4 md:px-6 relative'>
       <div
@@ -227,9 +234,7 @@ export function Home() {
             <Button>Mission Control</Button>
           </Link>
         )}
-        {isLoading ? (
-          <Button disabled>Loading...</Button>
-        ) : user ? (
+        {user ? (
           <Button onClick={logout}>Logout</Button>
         ) : (
           <Button onClick={login}>Login</Button>
@@ -374,6 +379,9 @@ export function Home() {
       {showInfoModal && <InfoModal onClose={() => setShowInfoModal(false)} />}
       {showXMTPModal && (
         <XMTPConversationModal onClose={() => setShowXMTPModal(false)} />
+      )}
+      {selectedTokenId && (
+        <CrowdfundingView tokenId={selectedTokenId} />
       )}
     </div>
   );

@@ -40,7 +40,7 @@ const MySatellites = () => {
         }
 
         const response = await fetch(
-          `http://192.168.1.56:3000/api/satellite?address=${userAddress}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/satellite?address=${userAddress}`
         );
         if (!response.ok) {
           throw new Error('Failed to fetch satellites');
