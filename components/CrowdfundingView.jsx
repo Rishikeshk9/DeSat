@@ -82,6 +82,32 @@ const CrowdfundingView = ({ tokenId }) => {
     }
   };
 
+  const handleEndCampaign = async () => {
+    if (!provider || !campaignDetails) return;
+
+    setLoading(true);
+    try {
+      const ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+      const crowdfundingContract = new ethers.Contract(
+        process.env.NEXT_PUBLIC_CROWDFUNDING_CONTRACT_ADDRESS,
+        CrowdfundingSatelliteABI,
+        signer
+      );
+
+      const tx = await crowdfundingContract.endCampaign(tokenId);
+      await tx.wait();
+
+      alert('Campaign ended successfully!');
+      fetchCampaignDetails();
+    } catch (error) {
+      console.error('Error ending campaign:', error);
+      alert('Error ending campaign. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!campaignDetails) {
     return <div>Loading campaign details...</div>;
   }
@@ -106,6 +132,12 @@ const CrowdfundingView = ({ tokenId }) => {
           <Button onClick={handleContribute} disabled={loading}>
             {loading ? 'Contributing...' : 'Contribute'}
           </Button>
+          
+          {(new Date() >= campaignDetails.endTime || parseFloat(campaignDetails.totalFunded) >= parseFloat(campaignDetails.goal)) && (
+            <Button onClick={handleEndCampaign} disabled={loading}>
+              {loading ? 'Ending Campaign...' : 'End Campaign'}
+            </Button>
+          )}
         </div>
       )}
     </div>
