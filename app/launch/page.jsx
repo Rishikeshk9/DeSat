@@ -1,5 +1,5 @@
 import { Launch } from '@/components/Launch';
 
-export default function LaunchPage() {
+export default function Page() {
   return <Launch />;
 }

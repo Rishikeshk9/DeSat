@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { XMTPProvider, useClient } from '@xmtp/react-sdk';
+import dynamic from 'next/dynamic';
+
+const XMTPProvider = dynamic(
+  () => import('@xmtp/react-sdk').then((mod) => mod.XMTPProvider),
+  { ssr: false }
+);
+const useClient = dynamic(
+  () => import('@xmtp/react-sdk').then((mod) => mod.useClient),
+  { ssr: false }
+);
 import { ethers } from 'ethers';
 
 const CreateClient = ({ provider }) => {
