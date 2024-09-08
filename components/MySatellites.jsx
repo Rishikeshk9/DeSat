@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useWeb3Auth } from './Web3AuthProvider';
 import Button from './Button';
 import { ethers } from 'ethers';
+import CrowdfundingView from './CrowdfundingView';
 
 const getAccounts = async (provider) => {
   try {
@@ -40,7 +41,12 @@ const MySatellites = () => {
         }
 
         const response = await fetch(
-          `http://192.168.1.56:3000/api/satellite?address=${userAddress}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/satellite?address=${userAddress}`,
+          {
+            headers: {
+              'ngrok-skip-browser-warning': '69420',
+            },
+          }
         );
         if (!response.ok) {
           throw new Error('Failed to fetch satellites');
@@ -72,7 +78,7 @@ const MySatellites = () => {
       {satellites.length === 0 ? (
         <p>You haven't launched any satellites yet.</p>
       ) : (
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2'>
           {satellites.map((satellite) => (
             <div
               key={satellite.tokenId}
@@ -89,6 +95,8 @@ const MySatellites = () => {
               <p>
                 <strong>Token ID:</strong> {satellite.tokenId}
               </p>
+
+              <CrowdfundingView tokenId={satellite.tokenId} />
               <p>
                 <strong>Organization:</strong> {satellite.organizationName}
               </p>

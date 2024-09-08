@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { XMTPProvider, useClient } from '@xmtp/react-sdk';
+import dynamic from 'next/dynamic';
+
+const XMTPProvider = dynamic(
+  () => import('@xmtp/react-sdk').then((mod) => mod.XMTPProvider),
+  { ssr: false }
+);
+import { useClient } from '@xmtp/react-sdk';
 import { ethers } from 'ethers';
 
 const CreateClient = ({ provider }) => {
@@ -13,7 +19,8 @@ const CreateClient = ({ provider }) => {
       if (provider) {
         try {
           const ethersProvider = new ethers.BrowserProvider(provider);
-          const newSigner = await ethersProvider.getSigner();
+          // Try to get the signer without requesting accounts
+          const newSigner = await ethersProvider.getSigner().catch(() => null);
           setSigner(newSigner);
         } catch (error) {
           console.error('Error setting up signer:', error);

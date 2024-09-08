@@ -1,11 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import {
-  useCanMessage,
-  useStartConversation,
-  useStreamMessages,
-  useSendMessage,
-} from '@xmtp/react-sdk';
-import Button from './Button';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useClient, useCanMessage, useStartConversation, useSendMessage, useStreamMessages } from '@xmtp/react-sdk';
 
 const XMTPConversationModal = ({ onClose }) => {
   const [message, setMessage] = useState('');
@@ -15,19 +9,39 @@ const XMTPConversationModal = ({ onClose }) => {
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
 
+  const { client } = useClient();
   const { canMessage } = useCanMessage();
   const { startConversation } = useStartConversation();
   const { sendMessage } = useSendMessage();
 
   const peerAddress = '0x292934dbE5fb4423Ce2C5AB18f20918aAA6f1a76'; // Static peer address
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom]);
+
+  // Callback to handle incoming messages
+  const onMessage = useCallback((message) => {
+    setMessages((prevMessages) => {
+      // Check if the message is already in the state
+      const isDuplicate = prevMessages.some(
+        (msg) => msg.id === message.id
+      );
+      if (isDuplicate) {
+        return prevMessages;
+      }
+      return [...prevMessages, message];
+    });
+  }, []);
+
+  // Use the useStreamMessages hook to listen for new messages
+  useStreamMessages(conversation, { onMessage });
 
   useEffect(() => {
     const initConversation = async () => {
@@ -39,105 +53,137 @@ const XMTPConversationModal = ({ onClose }) => {
           setIsLoading(false);
           return;
         }
-        const newConversation = await startConversation(peerAddress, 'Hi');
-        console.log('newConversation', newConversation);
-        setConversation(newConversation);
-        setMessages([
-          { content: 'Hi', senderAddress: newConversation?.clientAddress },
-        ]);
+
+        // Try to find an existing conversation
+        const conversations = await client.conversations.list();
+        const existingConversation = conversations.find(
+          (conv) => conv.peerAddress === peerAddress
+        );
+
+        if (existingConversation) {
+          setConversation(existingConversation);
+          // Fetch conversation history
+          const history = await existingConversation.messages();
+          setMessages(history);
+        } else {
+          // If no existing conversation, start a new one without sending a message
+          const newConversation = await client.conversations.newConversation(peerAddress);
+          setConversation(newConversation);
+        }
       } catch (err) {
-        console.error('Error starting conversation:', err);
-        setError('Failed to start conversation. Please try again.');
+        console.error('Error initializing conversation:', err);
+        setError('Failed to initialize conversation. Please try again.');
       }
       setIsLoading(false);
     };
 
-    initConversation();
-  }, [canMessage, startConversation, peerAddress]);
-
-  const onMessage = useCallback((message) => {
-    console.log('New message received:', message);
-    setMessages((prevMessages) => {
-      // Check if the message already exists in the array
-      const messageExists = prevMessages.some((msg) => msg.id === message.id);
-      if (!messageExists) {
-        return [...prevMessages, message];
-      }
-      return prevMessages;
-    });
-  }, []);
-
-  useStreamMessages(conversation?.conversation, { onMessage });
-
-  const handleSendMessage = useCallback(async () => {
-    if (message.trim() && conversation) {
-      setIsLoading(true);
-      try {
-        const sentMessage = await sendMessage(
-          conversation?.conversation,
-          message
-        );
-        // Remove this line to prevent adding the sent message manually
-        // setMessages((prevMessages) => [
-        //   ...prevMessages,
-        //   { ...sentMessage, senderAddress: conversation?.clientAddress },
-        // ]);
-        setMessage('');
-      } catch (err) {
-        console.error('Error sending message:', err);
-        setError('Failed to send message. Please try again.');
-      }
-      setIsLoading(false);
+    if (client) {
+      initConversation();
     }
-  }, [message, conversation, sendMessage]);
+  }, [client, canMessage]);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !conversation) return;
+
+    try {
+      const sentMessage = await sendMessage(conversation, message);
+      setMessages((prevMessages) => {
+        // Check if the message is already in the state
+        const isDuplicate = prevMessages.some(
+          (msg) => msg.id === sentMessage.id
+        );
+        if (isDuplicate) {
+          return prevMessages;
+        }
+        return [...prevMessages, sentMessage];
+      });
+      setMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+    }
+  };
+
+  const convertLinksToHyperlinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, index) => 
+      urlRegex.test(part) ? (
+        <a 
+          key={`link-${index}-${part.substring(0, 10)}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:underline"
+        >
+          {part}
+        </a>
+      ) : (
+        part
+      )
+    );
+  };
+
+  if (isLoading) {
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg">Loading conversation...</div>
+    </div>;
+  }
+
+  if (error) {
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg">Error: {error}</div>
+    </div>;
+  }
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50'>
-      <div className='bg-[#21262D] p-6 rounded-lg w-96 max-h-[80vh] flex flex-col'>
-        <h2 className='mb-4 text-2xl font-bold text-white'>
-          Launch Satellite Chat
-        </h2>
-        <div className='flex-grow mb-4 overflow-y-auto'>
-          {messages.map((msg, index) => (
-            <div
-              key={msg.id || index}
-              className={`mb-2  ${
-                msg.senderAddress === peerAddress
-                  ? 'text-left text-black'
-                  : 'text-right text-white'
-              }`}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
+        <h2 className="text-xl font-bold mb-4">XMTP Conversation</h2>
+        <div className="flex-grow overflow-y-auto mb-4 space-y-2">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.senderAddress === client.address ? 'justify-end' : 'justify-start'}`}
             >
-              <span
-                className={`inline-block p-2 rounded ${
-                  msg.senderAddress === peerAddress ? 'bg-white' : 'bg-black'
+              <div 
+                className={`max-w-[75%] rounded-lg px-3 py-2 break-words ${
+                  msg.senderAddress === client.address 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-black'
                 }`}
               >
-                {msg.content}
-              </span>
+                <p className="text-sm">{convertLinksToHyperlinks(msg.content)}</p>
+                <p className="text-xs mt-1 opacity-70">
+                  {new Date(msg.sent).toLocaleTimeString()}
+                </p>
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
         </div>
-        {error && <p className='mb-4 text-red-500'>{error}</p>}
-        <div className='flex'>
+        <div className="flex">
           <input
-            className='flex-grow p-2 mr-2 bg-[#30363D] text-white rounded'
-            type='text'
+            type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder='Type a message...'
-            disabled={isLoading}
+            className="flex-grow border rounded-l px-2 py-1"
+            placeholder="Type a message..."
           />
-          <Button
+          <button
+            type="button"
             onClick={handleSendMessage}
-            disabled={isLoading || !message.trim()}
+            className="bg-blue-500 text-white px-4 py-1 rounded-r"
           >
             Send
-          </Button>
+          </button>
         </div>
-        <Button onClick={onClose} className='mt-4'>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 bg-gray-300 text-black px-4 py-1 rounded"
+        >
           Close
-        </Button>
+        </button>
       </div>
     </div>
   );
