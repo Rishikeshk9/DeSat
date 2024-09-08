@@ -13,7 +13,8 @@ const CreateClient = ({ provider }) => {
       if (provider) {
         try {
           const ethersProvider = new ethers.BrowserProvider(provider);
-          const newSigner = await ethersProvider.getSigner();
+          // Try to get the signer without requesting accounts
+          const newSigner = await ethersProvider.getSigner().catch(() => null);
           setSigner(newSigner);
         } catch (error) {
           console.error('Error setting up signer:', error);

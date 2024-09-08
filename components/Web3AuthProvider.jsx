@@ -7,26 +7,16 @@ import React, {
   useContext,
   useCallback,
 } from 'react';
-import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from '@web3auth/base';
+import { CHAIN_NAMESPACES, IProvider, WALLET_ADAPTERS, WEB3AUTH_NETWORK } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 import { Web3Auth } from '@web3auth/modal';
 import { ethers } from 'ethers';
+import { MetamaskAdapter } from '@web3auth/metamask-adapter';
 
 const clientId =
   'BFlOmzaEDc3C8f9t48td3KPKAhKNo-5tdcA0FOgvSUcy19hJgvHlrzNzkiGrL4lQn67DAR0TysC3cXz2vLyr_zU';
 
 const chainConfig = {
-  chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: '0xaa36a7',
-  rpcTarget: 'https://rpc.ankr.com/eth_sepolia',
-  displayName: 'Ethereum Sepolia Testnet',
-  blockExplorerUrl: 'https://sepolia.etherscan.io',
-  ticker: 'ETH',
-  tickerName: 'Ethereum',
-  logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-};
-
-const ChillizConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
   chainId: '0x15b32', // Chilliz testnet chain ID in hex
   rpcTarget: 'https://spicy-rpc.chiliz.com',
@@ -38,16 +28,58 @@ const ChillizConfig = {
   isTestnet: true,
 };
 
+// const privateKeyProvider = new EthereumPrivateKeyProvider({
+//   config: { chainConfig },
+// });
+
+// const modalConfig = {
+//   [WALLET_ADAPTERS.METAMASK]: {
+//     label: "MetaMask",
+//     showOnModal: true
+//   }
+// };
+
+// const web3auth = new Web3Auth({
+//   clientId,
+//   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
+//   privateKeyProvider,
+//   chainConfig,
+//   uiConfig: {
+//     modalConfig
+//   }
+// });
+
+const ChillizConfig = chainConfig;
 const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig, ChillizConfig },
+  config: { chainConfig },
 });
+
+
+const modalConfig = {
+  [WALLET_ADAPTERS.METAMASK]: {
+    label: "MetaMask",
+    showOnModal: true
+  }
+};
 
 const web3auth = new Web3Auth({
   clientId,
   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
   privateKeyProvider,
-  chainConfig: chainConfig,
+  chainConfig,
+  uiConfig: {
+    modalConfig
+  }
 });
+const metamaskAdapter = new MetamaskAdapter({
+  clientId,
+  sessionTime: 3600,
+  web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
+  chainConfig,
+});
+
+web3auth.configureAdapter(metamaskAdapter);
+
 
 const Web3AuthContext = createContext(null);
 
@@ -63,9 +95,11 @@ export const Web3AuthProvider = ({ children }) => {
 
   const initializeWeb3Auth = useCallback(async () => {
     try {
-      await web3auth.initModal();
+      await web3auth.initModal({
+        modalConfig
+      });
       setIsInitialized(true);
-      await web3auth.addChain(ChillizConfig);
+      // await web3auth.addChain(chainConfig);
       if (web3auth.connected) {
         console.log('Connected to Web3Auth');
 
@@ -76,8 +110,13 @@ export const Web3AuthProvider = ({ children }) => {
 
         const ethProvider = new ethers.BrowserProvider(web3authProvider);
         setEthersProvider(ethProvider);
-        const ethSigner = await ethProvider.getSigner();
-        setSigner(ethSigner);
+        try {
+          const ethSigner = await ethProvider.getSigner();
+          setSigner(ethSigner);
+        } catch (error) {
+          console.warn('Unable to get signer:', error);
+          // Continue without signer
+        }
       }
     } catch (error) {
       console.error('Error initializing Web3Auth:', error);
@@ -86,9 +125,9 @@ export const Web3AuthProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    console.log(web3auth);
-  }, [web3auth.status]);
+  // useEffect(() => {
+  //   console.log(web3auth);
+  // }, []);
 
   useEffect(() => {
     initializeWeb3Auth();
@@ -175,13 +214,13 @@ export const Web3AuthProvider = ({ children }) => {
 
   const switchChain = async () => {
     if (!ethersProvider || !signer) return null;
-    try {
-      await web3auth.addChain(ChillizConfig);
-      await web3auth.switchChain({ chainId: '0x15b32' });
-    } catch (error) {
-      console.error('Error Switching Chain:', error);
-      return null;
-    }
+    // try {
+    //   await web3auth.addChain(ChillizConfig);
+    //   await web3auth.switchChain({ chainId: '0x15b32' });
+    // } catch (error) {
+    //   console.error('Error Switching Chain:', error);
+    //   return null;
+    // }
   };
 
   const value = {

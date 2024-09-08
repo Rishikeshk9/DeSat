@@ -16,13 +16,15 @@ const XMTPConversationModal = ({ onClose }) => {
 
   const peerAddress = '0x292934dbE5fb4423Ce2C5AB18f20918aAA6f1a76'; // Static peer address
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom]);
 
   // Callback to handle incoming messages
   const onMessage = useCallback((message) => {
@@ -78,7 +80,7 @@ const XMTPConversationModal = ({ onClose }) => {
     if (client) {
       initConversation();
     }
-  }, [client, canMessage, peerAddress]);
+  }, [client, canMessage]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || !conversation) return;
@@ -102,24 +104,59 @@ const XMTPConversationModal = ({ onClose }) => {
     }
   };
 
+  const convertLinksToHyperlinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, index) => 
+      urlRegex.test(part) ? (
+        <a 
+          key={`link-${index}-${part.substring(0, 10)}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:underline"
+        >
+          {part}
+        </a>
+      ) : (
+        part
+      )
+    );
+  };
+
   if (isLoading) {
-    return <div>Loading conversation...</div>;
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg">Loading conversation...</div>
+    </div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg">Error: {error}</div>
+    </div>;
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] flex flex-col">
+      <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
         <h2 className="text-xl font-bold mb-4">XMTP Conversation</h2>
-        <div className="flex-grow overflow-y-auto mb-4">
-          {messages.map((msg, index) => (
-            <div key={index} className={`mb-2 ${msg.senderAddress === client.address ? 'text-right' : 'text-left'}`}>
-              <span className="bg-gray-200 rounded px-2 py-1 inline-block">
-                {msg.content}
-              </span>
+        <div className="flex-grow overflow-y-auto mb-4 space-y-2">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.senderAddress === client.address ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-[75%] rounded-lg px-3 py-2 break-words ${
+                  msg.senderAddress === client.address 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-black'
+                }`}
+              >
+                <p className="text-sm">{convertLinksToHyperlinks(msg.content)}</p>
+                <p className="text-xs mt-1 opacity-70">
+                  {new Date(msg.sent).toLocaleTimeString()}
+                </p>
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -133,6 +170,7 @@ const XMTPConversationModal = ({ onClose }) => {
             placeholder="Type a message..."
           />
           <button
+            type="button"
             onClick={handleSendMessage}
             className="bg-blue-500 text-white px-4 py-1 rounded-r"
           >
@@ -140,6 +178,7 @@ const XMTPConversationModal = ({ onClose }) => {
           </button>
         </div>
         <button
+          type="button"
           onClick={onClose}
           className="mt-4 bg-gray-300 text-black px-4 py-1 rounded"
         >
