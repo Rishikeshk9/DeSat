@@ -18,13 +18,12 @@
     "@web3auth/modal": "^8.12.7",
     "@web3auth/modal-react-hooks": "^8.13.0",
     "@xmtp/react-sdk": "^8.0.1",
-    "@xmtp/xmtp-js": "^12.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "ethers": "^6.0.0",
     "gsap": "^3.12.5",
     "lucide-react": "^0.438.0",
-    "next": "14.2.7",
+    "next": "^14.2.0",
     "papaparse": "^5.4.1",
     "react": "^18.3.1",
     "react-dom": "^18",
@@ -34,6 +33,7 @@
     "three": "^0.168.0"
   },
   "devDependencies": {
+    "copy-webpack-plugin": "^12.0.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1"
   }

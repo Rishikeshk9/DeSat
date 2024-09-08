@@ -4,8 +4,9 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { StrictMode } from 'react';
 import { Web3AuthProvider, useWeb3Auth } from '../components/Web3AuthProvider';
-import XMTPClientProvider from '../components/XMTPClientProvider';
-
+// import XMTPClientProvider from '../components/XMTPClientProvider';
+import dynamic from 'next/dynamic';
+const XMTPClientProvider = dynamic(() => import('../components/XMTPClientProvider'), { ssr: false });
 const inter = Inter({ subsets: ['latin'] });
 
 function LayoutContent({ children }) {

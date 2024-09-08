@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Papa from 'papaparse';
-import { calculateSatellitePosition } from '@/app/utils/satellite';
+import { calculateSatellitePosition } from '@/lib/utils/satellite';
 import GLTFModelViewer from './GLTFModelViewer';
 import MoonViewer from './MoonViewer';
 import Link from 'next/link';
@@ -11,7 +11,12 @@ import InfoModal from './InfoModal';
 import Button from './Button';
 import { gsap } from 'gsap';
 import { useWeb3Auth } from './Web3AuthProvider';
-import XMTPConversationModal from './XMTPConversationModal';
+import dynamic from 'next/dynamic';
+
+const XMTPConversationModal = dynamic(() => import('./XMTPConversationModal'), {
+  loading: () => <p>Loading...</p>,
+  ssr: false
+});
 import MySatellites from './MySatellites';
 import CrowdfundingView from './CrowdfundingView.jsx';
 

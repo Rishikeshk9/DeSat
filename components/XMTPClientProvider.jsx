@@ -7,10 +7,7 @@ const XMTPProvider = dynamic(
   () => import('@xmtp/react-sdk').then((mod) => mod.XMTPProvider),
   { ssr: false }
 );
-const useClient = dynamic(
-  () => import('@xmtp/react-sdk').then((mod) => mod.useClient),
-  { ssr: false }
-);
+import { useClient } from '@xmtp/react-sdk';
 import { ethers } from 'ethers';
 
 const CreateClient = ({ provider }) => {
